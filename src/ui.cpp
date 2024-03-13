@@ -1,5 +1,10 @@
 #include "ui.h"
 
+UI::UI(int argc, char** argv)
+{
+    // TODO: process argc and argv if necessary
+}
+
 bool UI::Show()
 {
     bool keepOpen = true;

@@ -1,12 +1,8 @@
-// Dear ImGui: standalone example application for GLFW + OpenGL 3, using programmable pipeline
-// (GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan/Metal graphics context creation, etc.)
-// If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
-// Read online: https://github.com/ocornut/imgui/tree/master/docs
-
 #include "ui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
+#include <stdlib.h>
 #define GLFW_INCLUDE_NONE
 #define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -16,29 +12,28 @@
 #include <imgui_impl_opengl3_loader.h>
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-// [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
-// To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
-// Your own project should not be affected, as you are likely to link with a newer binary of GLFW that is adequate for your version of Visual Studio.
-#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
-#pragma comment(lib, "legacy_stdio_definitions")
-#endif
-
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
+#error TODO: Emscripten support
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
-static void glfw_error_callback(int error, const char* description)
-{
-    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
-}
-
 // Main code
-int main(int, char**)
+int main(int argc, char** argv)
 {
-    glfwSetErrorCallback(glfw_error_callback);
+    // Initialize our UI state
+    UI ui(argc, argv);
+
+    glfwSetErrorCallback([](int error, const char* description)
+    {
+#ifdef _WIN32
+        MessageBoxA(GetDesktopWindow(), description, "Error", MB_ICONERROR | MB_OK | MB_SYSTEMMODAL);
+#else
+        fprintf(stderr, "Error %d: %s\n", error, description);
+#endif // _WIN32
+    });
     if (!glfwInit())
-        return 1;
+        return EXIT_FAILURE;
 
     // Decide GL+GLSL versions
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -67,12 +62,15 @@ int main(int, char**)
     // Hide the main application window
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    // Create window with graphics context
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", NULL, NULL);
+    // Create window with graphics context (not visible)
+    GLFWwindow* window = glfwCreateWindow(1, 1, "", NULL, NULL);
     if (window == NULL)
-        return 1;
+        return EXIT_FAILURE;
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1); // Enable vsync
+
+    // https://github.com/ocornut/imgui/issues/1664#issuecomment-372022042
+    glfwWaitEventsTimeout(1.0f / 20.0f);
+    glfwSwapInterval(1);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -80,7 +78,7 @@ int main(int, char**)
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
     io.ConfigViewportsNoAutoMerge = true;
     //io.ConfigViewportsNoTaskBarIcon = true;
@@ -118,9 +116,7 @@ int main(int, char**)
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
 
-    // Our state
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    UI ui;
 
     // Main loop
 #ifdef __EMSCRIPTEN__
@@ -184,5 +180,38 @@ int main(int, char**)
     glfwDestroyWindow(window);
     glfwTerminate();
 
-    return 0;
+    return EXIT_SUCCESS;
 }
+
+#ifdef WIN32
+#include <Windows.h>
+#include <shellapi.h>
+
+int WINAPI CALLBACK WinMain(
+    _In_ HINSTANCE hInstance,
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPSTR lpCmdLine,
+    _In_ int nShowCmd)
+{
+    // https://utf8everywhere.org/
+    int argc = 0;
+    auto argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    auto argv_utf8 = new char* [argc];
+    for (int i = 0; i < argc; i++)
+    {
+        int requiredSize = WideCharToMultiByte(CP_UTF8, 0, argv[i], -1, 0, 0, 0, 0);
+        if (requiredSize > 0)
+        {
+            argv_utf8[i] = new char[requiredSize];
+            WideCharToMultiByte(CP_UTF8, 0, argv[i], -1, argv_utf8[i], requiredSize, 0, 0);
+        }
+        else
+        {
+            argv_utf8[i] = new char[1];
+            argv_utf8[i][0] = '\0';
+        }
+    }
+    LocalFree(argv);
+    return main(argc, argv_utf8);
+}
+#endif // WIN32

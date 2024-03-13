@@ -40,3 +40,4 @@ sources = [
 ]
 compile-features = ["cxx_std_11"]
 link-libraries = ["imgui"]
+msvc.link-options = ["/SUBSYSTEM:WINDOWS"]

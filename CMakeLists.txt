@@ -109,6 +109,12 @@ target_link_libraries(imgui_cmkr PRIVATE
 	imgui
 )
 
+if(MSVC) # msvc
+	target_link_options(imgui_cmkr PRIVATE
+		"/SUBSYSTEM:WINDOWS"
+	)
+endif()
+
 get_directory_property(CMKR_VS_STARTUP_PROJECT DIRECTORY ${PROJECT_SOURCE_DIR} DEFINITION VS_STARTUP_PROJECT)
 if(NOT CMKR_VS_STARTUP_PROJECT)
 	set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT imgui_cmkr)
