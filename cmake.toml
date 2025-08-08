@@ -6,14 +6,15 @@ name = "imgui_cmkr"
 GLFW_BUILD_DOCS = false
 GLFW_INSTALL = false
 
+# 3.4 (submodule)
 [subdir.glfw]
 
+# v1.92.1-docking (submodule)
 [target.imgui]
 type = "static"
 include-directories = [
     "imgui",
     "imgui/backends",
-    #"imgui/examples/libs/glfw/include",
 ]
 sources = [
     "imgui/*.cpp",
@@ -28,8 +29,7 @@ windows.sources = [
     "imgui/backends/imgui_impl_win32.cpp",
     "imgui/backends/imgui_impl_win32.h",
 ]
-link-libraries = ["glfw"]
-clang.compile-options = ["-fsanitize"]
+link-libraries = ["::glfw"]
 
 [target.imgui_cmkr]
 type = "executable"
@@ -39,5 +39,5 @@ sources = [
     "src/ui.h",
 ]
 compile-features = ["cxx_std_11"]
-link-libraries = ["imgui"]
+link-libraries = ["::imgui"]
 msvc.link-options = ["/SUBSYSTEM:WINDOWS"]

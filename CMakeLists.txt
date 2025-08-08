@@ -21,7 +21,7 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 	# Create a configure-time dependency on cmake.toml to improve IDE support
-	configure_file(cmake.toml cmake.toml COPYONLY)
+	set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS cmake.toml)
 endif()
 
 # Variables
@@ -42,23 +42,23 @@ set(CMAKE_FOLDER ${CMKR_CMAKE_FOLDER})
 
 # Target: imgui
 set(imgui_SOURCES
-	"imgui/imgui.cpp"
-	"imgui/imgui_demo.cpp"
-	"imgui/imgui_draw.cpp"
-	"imgui/imgui_tables.cpp"
-	"imgui/imgui_widgets.cpp"
-	"imgui/imconfig.h"
-	"imgui/imgui.h"
-	"imgui/imgui_internal.h"
-	"imgui/imstb_rectpack.h"
-	"imgui/imstb_textedit.h"
-	"imgui/imstb_truetype.h"
+	cmake.toml
+	"imgui/backends/imgui_impl_glfw.cpp"
+	"imgui/backends/imgui_impl_glfw.h"
 	"imgui/backends/imgui_impl_opengl3.cpp"
 	"imgui/backends/imgui_impl_opengl3.h"
 	"imgui/backends/imgui_impl_opengl3_loader.h"
-	"imgui/backends/imgui_impl_glfw.cpp"
-	"imgui/backends/imgui_impl_glfw.h"
-	cmake.toml
+	"imgui/imconfig.h"
+	"imgui/imgui.cpp"
+	"imgui/imgui.h"
+	"imgui/imgui_demo.cpp"
+	"imgui/imgui_draw.cpp"
+	"imgui/imgui_internal.h"
+	"imgui/imgui_tables.cpp"
+	"imgui/imgui_widgets.cpp"
+	"imgui/imstb_rectpack.h"
+	"imgui/imstb_textedit.h"
+	"imgui/imstb_truetype.h"
 )
 
 if(WIN32) # windows
@@ -73,16 +73,14 @@ add_library(imgui STATIC)
 target_sources(imgui PRIVATE ${imgui_SOURCES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${imgui_SOURCES})
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "Clang") # clang
-	target_compile_options(imgui PUBLIC
-		-fsanitize
-	)
-endif()
-
 target_include_directories(imgui PUBLIC
 	imgui
 	"imgui/backends"
 )
+
+if(NOT TARGET glfw)
+	message(FATAL_ERROR "Target \"glfw\" referenced by \"imgui\" does not exist!")
+endif()
 
 target_link_libraries(imgui PUBLIC
 	glfw
@@ -90,10 +88,10 @@ target_link_libraries(imgui PUBLIC
 
 # Target: imgui_cmkr
 set(imgui_cmkr_SOURCES
+	cmake.toml
 	"src/main.cpp"
 	"src/ui.cpp"
 	"src/ui.h"
-	cmake.toml
 )
 
 add_executable(imgui_cmkr)
@@ -104,6 +102,10 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${imgui_cmkr_SOURCES})
 target_compile_features(imgui_cmkr PRIVATE
 	cxx_std_11
 )
+
+if(NOT TARGET imgui)
+	message(FATAL_ERROR "Target \"imgui\" referenced by \"imgui_cmkr\" does not exist!")
+endif()
 
 target_link_libraries(imgui_cmkr PRIVATE
 	imgui
@@ -119,4 +121,3 @@ get_directory_property(CMKR_VS_STARTUP_PROJECT DIRECTORY ${PROJECT_SOURCE_DIR} D
 if(NOT CMKR_VS_STARTUP_PROJECT)
 	set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT imgui_cmkr)
 endif()
-
