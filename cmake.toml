@@ -6,7 +6,7 @@ name = "imgui_cmkr"
 GLFW_BUILD_DOCS = false
 GLFW_INSTALL = false
 
-# 3.4 (submodule)
+# 3.3.10 (submodule, newer versions do not work on some Linux distros)
 [subdir.glfw]
 
 # v1.92.1-docking (submodule)
